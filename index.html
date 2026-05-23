@@ -157,6 +157,11 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
 .modal-menu-item.danger .modal-menu-icon svg { stroke: var(--danger); }
 .modal-menu-item.danger .modal-menu-icon { background: var(--danger-light); }
 
+/* Delete list */
+.delete-list-wrap { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.btn-delete-list { width: 100%; padding: 14px; background: var(--danger-light); color: var(--danger); border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.btn-delete-list:active { opacity: 0.8; }
+
 /* Toast */
 .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: white; padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.25s; z-index: 200; white-space: nowrap; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -279,6 +284,9 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
     <div class="share-link-box" id="share-link-box"></div>
     <button class="btn-copy" onclick="copyShareLink()">🔗 Link kopiëren</button>
     <div id="members-container"></div>
+    <div class="delete-list-wrap" id="delete-list-wrap" style="display:none">
+      <button class="btn-delete-list" onclick="confirmDeleteList()">Lijst verwijderen</button>
+    </div>
   </div>
 </div>
 
@@ -296,6 +304,19 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
   </div>
 </div>
 
+<!-- ── Modal: Naam wijzigen ───────────────────────────── -->
+<div class="modal-overlay" id="modal-rename">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Naam wijzigen</div>
+    <input class="modal-input" id="rename-input" type="text" placeholder="Nieuwe naam" maxlength="30" autocorrect="off">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-rename')">Annuleer</button>
+      <button class="btn-primary" style="flex:1.5" onclick="doRename()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Modal: Gebruiker menu ──────────────────────────── -->
 <div class="modal-overlay" id="modal-user" onclick="bgClose(event,'modal-user')">
   <div class="modal-sheet">
@@ -306,6 +327,12 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
         <div class="modal-user-name" id="modal-uname"></div>
         <div class="modal-user-email" id="modal-uemail"></div>
       </div>
+    </div>
+    <div class="modal-menu-item" onclick="openRenameModal()">
+      <div class="modal-menu-icon">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+      <div class="modal-menu-label">Naam wijzigen</div>
     </div>
     <div class="modal-menu-item danger" onclick="doLogout()">
       <div class="modal-menu-icon">
@@ -346,6 +373,7 @@ var currentListId      = null;
 var pendingShareToken  = null;
 var unsubItems         = null;
 var unsubLists         = null;
+var prevItemKeys       = null;
 
 // ── Constants ────────────────────────────────────────────
 var COLORS = ['#2D6A4F','#1A6B8A','#8B4513','#6B3FA0','#C0392B','#D4A853','#2C7873','#8E44AD'];
@@ -600,6 +628,7 @@ function createList() {
 function openList(listId) {
   if (unsubItems) { unsubItems(); unsubItems = null; }
   currentListId = listId;
+  prevItemKeys = null;
   db.ref('lists/' + listId).once('value').then(function(snap) {
     var list = snap.val();
     if (!list) { showToast('Lijst niet gevonden.'); return; }
@@ -621,6 +650,17 @@ function renderItems(itms) {
   var container = document.getElementById('items-list');
   var clearBtn  = document.getElementById('clear-checked-btn');
   var keys      = Object.keys(itms);
+
+  if (prevItemKeys !== null) {
+    keys.filter(function(k) { return prevItemKeys.indexOf(k) === -1; })
+      .forEach(function(k) {
+        var item = itms[k];
+        if (item.addedByUid && item.addedByUid !== currentUser.uid) {
+          showToast(item.addedBy + ' voegde "' + item.text + '" toe');
+        }
+      });
+  }
+  prevItemKeys = keys.slice();
 
   if (keys.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">✍️</div><div class="empty-text">Nog niets op de lijst.<br>Voeg je eerste product toe.</div></div>';
@@ -685,6 +725,7 @@ function clearChecked() {
 function goBack() {
   if (unsubItems) { unsubItems(); unsubItems = null; }
   currentListId = null;
+  prevItemKeys = null;
   showScreen('lists');
 }
 
@@ -698,6 +739,10 @@ function openShareModal() {
     document.getElementById('share-link-box').textContent = url;
     document.getElementById('modal-share').classList.add('open');
     loadMembers(currentListId);
+    db.ref('listMembers/' + currentListId + '/' + currentUser.uid).once('value').then(function(s) {
+      var isOwner = s.val() && s.val().role === 'owner';
+      document.getElementById('delete-list-wrap').style.display = isOwner ? 'block' : 'none';
+    });
   });
 }
 
@@ -738,6 +783,65 @@ function loadMembers(listId) {
         '<span class="member-badge">' + (m.role === 'owner' ? 'Eigenaar' : 'Lid') + '</span>';
       el.appendChild(row);
     });
+  });
+}
+
+// ── Delete list ───────────────────────────────────────────
+function confirmDeleteList() {
+  if (!confirm('Weet je zeker dat je deze lijst wilt verwijderen? Dit kan niet ongedaan worden.')) return;
+  var listId = currentListId;
+  closeModal('modal-share');
+  db.ref('lists/' + listId).once('value').then(function(snap) {
+    var list = snap.val();
+    if (!list) return;
+    return db.ref('listMembers/' + listId).once('value').then(function(mSnap) {
+      var updates = {};
+      updates['lists/' + listId] = null;
+      updates['items/' + listId] = null;
+      updates['listMembers/' + listId] = null;
+      if (list.shareToken) updates['shareTokens/' + list.shareToken] = null;
+      Object.keys(mSnap.val() || {}).forEach(function(uid) {
+        updates['userLists/' + uid + '/' + listId] = null;
+      });
+      return db.ref().update(updates);
+    });
+  }).then(function() {
+    goBack();
+    showToast('Lijst verwijderd.');
+  }).catch(function() {
+    showToast('Kon lijst niet verwijderen.');
+  });
+}
+
+// ── Rename ────────────────────────────────────────────────
+function openRenameModal() {
+  closeModal('modal-user');
+  document.getElementById('rename-input').value = currentDisplayName;
+  document.getElementById('modal-rename').classList.add('open');
+  setTimeout(function() { document.getElementById('rename-input').focus(); }, 200);
+}
+
+function doRename() {
+  var name = document.getElementById('rename-input').value.trim();
+  if (!name) return;
+  closeModal('modal-rename');
+  if (name === currentDisplayName) return;
+  var uid = currentUser.uid;
+  currentUser.updateProfile({ displayName: name }).then(function() {
+    return db.ref('userLists/' + uid).once('value').then(function(snap) {
+      var updates = {};
+      updates['users/' + uid + '/displayName'] = name;
+      Object.keys(snap.val() || {}).forEach(function(listId) {
+        updates['listMembers/' + listId + '/' + uid + '/displayName'] = name;
+      });
+      return db.ref().update(updates);
+    });
+  }).then(function() {
+    currentDisplayName = name;
+    renderUserChip();
+    showToast('Naam gewijzigd naar ' + name + '.');
+  }).catch(function() {
+    showToast('Kon naam niet wijzigen.');
   });
 }
 
@@ -799,6 +903,7 @@ document.getElementById('reg-password').addEventListener('keydown', function(e) 
 document.getElementById('new-list-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') createList(); });
 document.getElementById('add-item-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') addItem(); });
 document.getElementById('guest-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') doGuestLogin(); });
+document.getElementById('rename-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRename(); });
 
 // ── Init: share token from URL ────────────────────────────
 (function() {
