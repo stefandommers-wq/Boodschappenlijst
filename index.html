@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
@@ -9,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Boodschappen">
 <meta name="theme-color" content="#2D6A4F">
 <meta name="description" content="Samen boodschappen bijhouden">
-<link rel="apple-touch-icon" id="apple-icon" href="">
+<link rel="apple-touch-icon" id="apple-icon">
 <link rel="manifest" id="pwa-manifest">
 <title>Boodschappen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,257 +29,565 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
 .screen { display: none; flex-direction: column; min-height: 100dvh; }
 .screen.active { display: flex; }
 
-#screen-name { justify-content: center; align-items: center; padding: 32px 24px; background: var(–surface); }
-.name-card { width: 100%; max-width: 360px; text-align: center; }
-.logo { font-family: ‘DM Serif Display’, serif; font-size: 40px; color: var(–accent); margin-bottom: 8px; }
-.logo-sub { font-size: 14px; color: var(–text3); margin-bottom: 40px; font-weight: 300; }
-.name-label { font-size: 13px; font-weight: 500; color: var(–text2); text-align: left; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.name-input { width: 100%; padding: 16px 18px; border: 2px solid var(–border); border-radius: var(–radius-sm); font-family: ‘DM Sans’, sans-serif; font-size: 18px; font-weight: 500; color: var(–text); background: var(–bg); outline: none; margin-bottom: 20px; -webkit-appearance: none; }
-.name-input:focus { border-color: var(–accent); }
-.btn-primary { width: 100%; padding: 16px; background: var(–accent); color: white; border: none; border-radius: var(–radius-sm); font-family: ‘DM Sans’, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.btn-primary:active { opacity: 0.85; }
+/* ── Loading ──────────────────────────────────────────── */
+.loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.3s; }
+.loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-#screen-lists { background: var(–bg); }
-.top-bar { background: var(–surface); padding: 16px 20px 14px; border-bottom: 1px solid var(–border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-.top-bar-title { font-family: ‘DM Serif Display’, serif; font-size: 22px; color: var(–text); }
-.user-chip { display: flex; align-items: center; gap: 7px; background: var(–accent-light); padding: 6px 12px 6px 6px; border-radius: 100px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.user-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; }
-.user-name-label { font-size: 13px; font-weight: 600; color: var(–accent); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ── Auth screen ──────────────────────────────────────── */
+#screen-auth { justify-content: center; align-items: center; padding: 32px 24px; background: var(--surface); }
+.auth-card { width: 100%; max-width: 360px; }
+.logo { font-family: 'DM Serif Display', serif; font-size: 40px; color: var(--accent); text-align: center; margin-bottom: 6px; }
+.logo-sub { font-size: 14px; color: var(--text3); margin-bottom: 32px; font-weight: 300; text-align: center; }
+.auth-tabs { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; }
+.auth-tab { flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text3); border-radius: 8px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+.auth-tab.active { background: white; color: var(--text); box-shadow: var(--shadow); }
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+.field-wrap { margin-bottom: 14px; }
+.field-label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+.auth-input { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text); background: var(--bg); outline: none; -webkit-appearance: none; transition: border-color 0.15s; }
+.auth-input:focus { border-color: var(--accent); }
+.btn-primary { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; margin-top: 4px; transition: opacity 0.15s; }
+.btn-primary:active { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+.auth-divider { text-align: center; color: var(--text3); font-size: 13px; margin: 16px 0; }
+.btn-ghost { width: 100%; padding: 14px; background: transparent; color: var(--text2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.btn-ghost:active { background: var(--bg); }
+.auth-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; text-align: center; }
+
+/* ── Guest banner ────────────────────────────────────── */
+.guest-banner { background: #FFF8E6; border-bottom: 1px solid #F0D08A; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.guest-banner-text { font-size: 13px; color: #8B6914; }
+.guest-banner-btn { font-size: 13px; font-weight: 600; color: var(--accent); background: none; border: none; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+
+/* ── Lists screen ─────────────────────────────────────── */
+#screen-lists { background: var(--bg); }
+.top-bar { background: var(--surface); padding: 16px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.top-bar-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+.user-chip { display: flex; align-items: center; gap: 7px; background: var(--accent-light); padding: 6px 12px 6px 6px; border-radius: 100px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.user-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
+.user-name-label { font-size: 13px; font-weight: 600; color: var(--accent); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lists-content { flex: 1; padding: 20px 16px; overflow-y: auto; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.list-card { background: var(–surface); border-radius: var(–radius); padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; box-shadow: var(–shadow); cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid var(–border); animation: slideIn 0.22s ease; }
+.list-card { background: var(--surface); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid var(--border); animation: slideIn 0.22s ease; }
 .list-card:active { opacity: 0.8; }
-.list-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; background: var(–accent-light); }
+.list-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; background: var(--accent-light); }
 .list-info { flex: 1; min-width: 0; }
-.list-name { font-size: 16px; font-weight: 600; color: var(–text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.list-meta { font-size: 13px; color: var(–text3); }
-.list-arrow { color: var(–text3); font-size: 20px; }
-.fab { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; background: var(–accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(45,106,79,0.35); cursor: pointer; -webkit-tap-highlight-color: transparent; border: none; z-index: 20; }
+.list-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-meta { font-size: 13px; color: var(--text3); }
+.list-arrow { color: var(--text3); font-size: 20px; }
+.fab { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(45,106,79,0.35); cursor: pointer; -webkit-tap-highlight-color: transparent; border: none; z-index: 20; }
 .fab:active { transform: scale(0.92); }
 .fab svg { width: 24px; height: 24px; stroke: white; stroke-width: 2.5; fill: none; }
 
-#screen-list { background: var(–bg); }
-.list-topbar { background: var(–surface); padding: 14px 16px; border-bottom: 1px solid var(–border); position: sticky; top: 0; z-index: 10; }
+/* ── List detail screen ───────────────────────────────── */
+#screen-list { background: var(--bg); }
+.list-topbar { background: var(--surface); padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
 .list-topbar-row1 { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(–bg); cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid var(–border); flex-shrink: 0; }
-.back-btn svg { width: 18px; height: 18px; stroke: var(–text); stroke-width: 2; fill: none; }
-.list-topbar-title { font-family: ‘DM Serif Display’, serif; font-size: 20px; color: var(–text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg); cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1px solid var(--border); flex-shrink: 0; }
+.back-btn svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; }
+.list-topbar-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-light); cursor: pointer; -webkit-tap-highlight-color: transparent; border: none; flex-shrink: 0; }
+.share-btn svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 2; fill: none; }
 .add-row { display: flex; gap: 8px; align-items: center; }
-.add-input { flex: 1; padding: 11px 14px; border: 2px solid var(–border); border-radius: var(–radius-sm); font-family: ‘DM Sans’, sans-serif; font-size: 16px; color: var(–text); background: var(–bg); outline: none; -webkit-appearance: none; }
-.add-input:focus { border-color: var(–accent); }
-.add-btn { width: 44px; height: 44px; background: var(–accent); border: none; border-radius: var(–radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.add-input { flex: 1; padding: 11px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text); background: var(--bg); outline: none; -webkit-appearance: none; }
+.add-input:focus { border-color: var(--accent); }
+.add-btn { width: 44px; height: 44px; background: var(--accent); border: none; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
 .add-btn:active { opacity: 0.8; }
 .add-btn svg { width: 20px; height: 20px; stroke: white; stroke-width: 2.5; fill: none; }
 .items-list { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 90px; }
-.item-row { background: var(–surface); border-radius: var(–radius-sm); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1px solid var(–border); animation: slideIn 0.2s ease; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.item-row { background: var(--surface); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); animation: slideIn 0.2s ease; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .item-row.checked { opacity: 0.5; }
-.checkbox { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(–border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.18s; }
-.item-row.checked .checkbox { background: var(–accent); border-color: var(–accent); }
+.checkbox { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.18s; }
+.item-row.checked .checkbox { background: var(--accent); border-color: var(--accent); }
 .checkbox svg { width: 13px; height: 13px; stroke: white; stroke-width: 3; fill: none; opacity: 0; transition: opacity 0.15s; }
 .item-row.checked .checkbox svg { opacity: 1; }
 .item-text-wrap { flex: 1; min-width: 0; }
-.item-text { font-size: 16px; font-weight: 500; color: var(–text); }
-.item-row.checked .item-text { text-decoration: line-through; color: var(–text3); }
-.item-by { font-size: 12px; color: var(–text3); margin-top: 2px; }
-.item-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
-.delete-item-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.delete-item-btn svg { width: 15px; height: 15px; stroke: var(–danger); stroke-width: 2; fill: none; }
-.clear-checked-btn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(–danger-light); color: var(–danger); border: none; border-radius: 100px; padding: 12px 22px; font-family: ‘DM Sans’, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: none; -webkit-tap-highlight-color: transparent; box-shadow: var(–shadow-lg); white-space: nowrap; }
+.item-text { font-size: 16px; font-weight: 500; color: var(--text); }
+.item-row.checked .item-text { text-decoration: line-through; color: var(--text3); }
+.item-by { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.item-avatar-sm { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+.delete-item-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.delete-item-btn svg { width: 16px; height: 16px; stroke: var(--text3); stroke-width: 2; fill: none; transition: stroke 0.15s; }
+.delete-item-btn:active svg { stroke: var(--danger); }
+.clear-checked-btn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--danger-light); color: var(--danger); border: none; border-radius: 100px; padding: 12px 22px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: none; -webkit-tap-highlight-color: transparent; box-shadow: var(--shadow-lg); white-space: nowrap; }
 .clear-checked-btn.visible { display: block; }
-.empty-state { text-align: center; padding: 48px 24px; color: var(–text3); }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-text { font-size: 15px; line-height: 1.5; }
 
+/* ── Modals ───────────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(26,23,20,0.5); z-index: 100; display: none; align-items: flex-end; backdrop-filter: blur(2px); }
 .modal-overlay.open { display: flex; }
-.modal-sheet { background: var(–surface); width: 100%; border-radius: 20px 20px 0 0; padding: 20px 20px 36px; animation: sheetUp 0.25s ease; }
+.modal-sheet { background: var(--surface); width: 100%; border-radius: 20px 20px 0 0; padding: 20px 20px 40px; animation: sheetUp 0.25s ease; max-height: 92dvh; overflow-y: auto; }
 @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-handle { width: 36px; height: 4px; background: var(–border); border-radius: 2px; margin: 0 auto 20px; }
-.modal-title { font-family: ‘DM Serif Display’, serif; font-size: 20px; color: var(–text); margin-bottom: 16px; }
-.modal-input { width: 100%; padding: 14px 16px; border: 2px solid var(–border); border-radius: var(–radius-sm); font-family: ‘DM Sans’, sans-serif; font-size: 17px; color: var(–text); background: var(–bg); outline: none; margin-bottom: 14px; -webkit-appearance: none; }
-.modal-input:focus { border-color: var(–accent); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); margin-bottom: 16px; }
+.modal-input { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 17px; color: var(--text); background: var(--bg); outline: none; margin-bottom: 14px; -webkit-appearance: none; }
+.modal-input:focus { border-color: var(--accent); }
 .emoji-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.emoji-opt { width: 44px; height: 44px; border-radius: 10px; background: var(–bg); border: 2px solid var(–border); font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.emoji-opt.selected { border-color: var(–accent); background: var(–accent-light); }
+.emoji-opt { width: 44px; height: 44px; border-radius: 10px; background: var(--bg); border: 2px solid var(--border); font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.emoji-opt.selected { border-color: var(--accent); background: var(--accent-light); }
 .modal-btns { display: flex; gap: 10px; }
-.btn-secondary { flex: 1; padding: 14px; background: var(–bg); color: var(–text2); border: 1px solid var(–border); border-radius: var(–radius-sm); font-family: ‘DM Sans’, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(–text); color: white; padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.25s; z-index: 200; white-space: nowrap; pointer-events: none; }
+.btn-secondary { flex: 1; padding: 14px; background: var(--bg); color: var(--text2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+/* Share modal */
+.share-link-box { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--text2); word-break: break-all; margin-bottom: 12px; font-family: monospace; line-height: 1.5; }
+.btn-copy { width: 100%; padding: 14px; background: var(--accent-light); color: var(--accent); border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; margin-bottom: 20px; }
+.btn-copy:active { opacity: 0.8; }
+.members-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.member-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.member-row:last-child { border-bottom: none; }
+.member-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+.member-badge { font-size: 11px; font-weight: 600; color: var(--text3); background: var(--bg); padding: 3px 8px; border-radius: 100px; border: 1px solid var(--border); }
+
+/* User menu modal */
+.modal-user-info { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.modal-user-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white; flex-shrink: 0; }
+.modal-user-detail { flex: 1; min-width: 0; }
+.modal-user-name { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.modal-user-email { font-size: 13px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.modal-menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.modal-menu-item:last-child { border-bottom: none; }
+.modal-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.modal-menu-icon svg { width: 18px; height: 18px; stroke: var(--text2); stroke-width: 2; fill: none; }
+.modal-menu-label { font-size: 15px; font-weight: 500; color: var(--text); }
+.modal-menu-item.danger .modal-menu-label { color: var(--danger); }
+.modal-menu-item.danger .modal-menu-icon svg { stroke: var(--danger); }
+.modal-menu-item.danger .modal-menu-icon { background: var(--danger-light); }
+
+/* Delete list */
+.delete-list-wrap { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.btn-delete-list { width: 100%; padding: 14px; background: var(--danger-light); color: var(--danger); border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.btn-delete-list:active { opacity: 0.8; }
+
+/* Toast */
+.toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: white; padding: 12px 20px; border-radius: 100px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.25s; z-index: 200; white-space: nowrap; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
-
 </head>
 <body>
 
-<div class="screen active" id="screen-name">
-  <div class="name-card">
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+</div>
+
+<!-- ── Screen: Inloggen / Registreren ─────────────────── -->
+<div class="screen" id="screen-auth">
+  <div class="auth-card">
     <div class="logo">🛒 Boodschappen</div>
     <div class="logo-sub">Samen boodschappen doen</div>
-    <div class="name-label">Jouw naam</div>
-    <input class="name-input" id="name-input" type="text" placeholder="Bijv. Stefan" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="20">
-    <button class="btn-primary" id="btn-save-name">Doorgaan</button>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Inloggen</div>
+      <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Registreren</div>
+    </div>
+
+    <div class="auth-form active" id="form-login">
+      <div class="field-wrap">
+        <label class="field-label">E-mail</label>
+        <input class="auth-input" id="login-email" type="email" placeholder="jouw@email.nl" autocomplete="email">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Wachtwoord</label>
+        <input class="auth-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" id="btn-login" onclick="doLogin()">Inloggen</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+
+    <div class="auth-form" id="form-register">
+      <div class="field-wrap">
+        <label class="field-label">Naam</label>
+        <input class="auth-input" id="reg-name" type="text" placeholder="Bijv. Stefan" autocomplete="name" maxlength="30">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">E-mail</label>
+        <input class="auth-input" id="reg-email" type="email" placeholder="jouw@email.nl" autocomplete="email">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Wachtwoord</label>
+        <input class="auth-input" id="reg-password" type="password" placeholder="Minimaal 6 tekens" autocomplete="new-password">
+      </div>
+      <button class="btn-primary" id="btn-register" onclick="doRegister()">Account aanmaken</button>
+      <div class="auth-error" id="register-error"></div>
+    </div>
+
+    <div class="auth-divider">of</div>
+    <button class="btn-ghost" onclick="openGuestModal()">Doorgaan als gast</button>
   </div>
 </div>
 
+<!-- ── Screen: Lijsten overzicht ──────────────────────── -->
 <div class="screen" id="screen-lists">
+  <div class="guest-banner" id="guest-banner" style="display:none">
+    <span class="guest-banner-text">Je gebruikt de app als gast</span>
+    <button class="guest-banner-btn" onclick="goCreateAccount()">Account aanmaken →</button>
+  </div>
   <div class="top-bar">
     <div class="top-bar-title">Mijn lijstjes</div>
-    <div class="user-chip" id="user-chip">
+    <div class="user-chip" id="user-chip" onclick="openUserModal()">
       <div class="user-avatar" id="header-avatar"></div>
       <span class="user-name-label" id="header-name"></span>
     </div>
   </div>
   <div class="lists-content" id="lists-content"></div>
-  <button class="fab" id="fab-new-list">
+  <button class="fab" onclick="openNewListModal()">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
 
+<!-- ── Screen: Lijst detail ───────────────────────────── -->
 <div class="screen" id="screen-list">
   <div class="list-topbar">
     <div class="list-topbar-row1">
-      <div class="back-btn" id="back-btn">
+      <div class="back-btn" onclick="goBack()">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </div>
       <span class="list-topbar-title" id="list-detail-title"></span>
+      <button class="share-btn" onclick="openShareModal()">
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
     </div>
     <div class="add-row">
       <input class="add-input" id="add-item-input" type="text" placeholder="Product toevoegen…" autocomplete="off" autocorrect="on" spellcheck="true">
-      <button class="add-btn" id="add-btn">
+      <button class="add-btn" onclick="addItem()">
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
     </div>
   </div>
   <div class="items-list" id="items-list"></div>
-  <button class="clear-checked-btn" id="clear-checked-btn">Afgevinkte items verwijderen</button>
+  <button class="clear-checked-btn" id="clear-checked-btn" onclick="clearChecked()">Afgevinkte items verwijderen</button>
 </div>
 
-<div class="modal-overlay" id="modal-new-list">
+<!-- ── Modal: Nieuwe lijst ────────────────────────────── -->
+<div class="modal-overlay" id="modal-new-list" onclick="bgClose(event,'modal-new-list')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Nieuwe lijst</div>
     <input class="modal-input" id="new-list-name" type="text" placeholder="Bijv. Albert Heijn" autocorrect="off">
     <div class="emoji-row" id="emoji-row"></div>
     <div class="modal-btns">
-      <button class="btn-secondary" id="btn-cancel-list">Annuleer</button>
-      <button class="btn-primary" style="flex:1.5" id="btn-create-list">Aanmaken</button>
+      <button class="btn-secondary" onclick="closeModal('modal-new-list')">Annuleer</button>
+      <button class="btn-primary" style="flex:1.5" onclick="createList()">Aanmaken</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Lijst delen ─────────────────────────────── -->
+<div class="modal-overlay" id="modal-share" onclick="bgClose(event,'modal-share')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Lijst delen</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:14px">Deel deze link om anderen toegang te geven. Ze kunnen er direct mee aan de slag, ook zonder account.</p>
+    <div class="share-link-box" id="share-link-box"></div>
+    <button class="btn-copy" onclick="copyShareLink()">🔗 Link kopiëren</button>
+    <div id="members-container"></div>
+    <div class="delete-list-wrap" id="delete-list-wrap" style="display:none">
+      <button class="btn-delete-list" onclick="confirmDeleteList()">Lijst verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Gast naam ───────────────────────────────── -->
+<div class="modal-overlay" id="modal-guest">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Doorgaan als gast</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">Kies een naam zodat anderen weten wie jij bent op de lijst.</p>
+    <input class="modal-input" id="guest-name" type="text" placeholder="Jouw naam" maxlength="30" autocorrect="off">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-guest')">Terug</button>
+      <button class="btn-primary" style="flex:1.5" onclick="doGuestLogin()">Verder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Naam wijzigen ───────────────────────────── -->
+<div class="modal-overlay" id="modal-rename">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Naam wijzigen</div>
+    <input class="modal-input" id="rename-input" type="text" placeholder="Nieuwe naam" maxlength="30" autocorrect="off">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-rename')">Annuleer</button>
+      <button class="btn-primary" style="flex:1.5" onclick="doRename()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Gebruiker menu ──────────────────────────── -->
+<div class="modal-overlay" id="modal-user" onclick="bgClose(event,'modal-user')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-user-info">
+      <div class="modal-user-avatar" id="modal-avatar"></div>
+      <div class="modal-user-detail">
+        <div class="modal-user-name" id="modal-uname"></div>
+        <div class="modal-user-email" id="modal-uemail"></div>
+      </div>
+    </div>
+    <div class="modal-menu-item" onclick="openRenameModal()">
+      <div class="modal-menu-icon">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+      <div class="modal-menu-label">Naam wijzigen</div>
+    </div>
+    <div class="modal-menu-item danger" onclick="doLogout()">
+      <div class="modal-menu-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+      <div class="modal-menu-label">Uitloggen</div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- Firebase SDKs (compat, CDN) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
 <script>
+// ── Firebase init ────────────────────────────────────────
+var firebaseConfig = {
+  apiKey: "AIzaSyDr5Ni_kZ_K-cejXFZCqJwWF-tKMlvhSJk",
+  authDomain: "boodschappenlijstje-de51b.firebaseapp.com",
+  databaseURL: "https://boodschappenlijstje-de51b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "boodschappenlijstje-de51b",
+  storageBucket: "boodschappenlijstje-de51b.firebasestorage.app",
+  messagingSenderId: "287474916761",
+  appId: "1:287474916761:web:7c8eaad9c95a26cb1e4708",
+  measurementId: "G-HG7VX7ELSC"
+};
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db   = firebase.database();
+
+// ── App state ────────────────────────────────────────────
+var currentUser        = null;
+var currentDisplayName = '';
+var currentListId      = null;
+var pendingShareToken  = null;
+var unsubItems         = null;
+var unsubLists         = null;
+var prevItemKeys       = null;
+
+// ── Constants ────────────────────────────────────────────
 var COLORS = ['#2D6A4F','#1A6B8A','#8B4513','#6B3FA0','#C0392B','#D4A853','#2C7873','#8E44AD'];
 var EMOJIS = ['🛒','🥦','🍎','🥐','🥩','🧹','🏠','💊','🐾','🎉'];
-var currentUser = {name:'',color:''};
-var currentListId = null;
 var selectedEmoji = '🛒';
-var lists = {};
-var items = {};
 
-function save() {
-  localStorage.setItem('bp_lists', JSON.stringify(lists));
-  localStorage.setItem('bp_items', JSON.stringify(items));
+// ── Helpers ──────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-function load() {
-  try { lists = JSON.parse(localStorage.getItem('bp_lists') || '{}'); } catch(e) { lists = {}; }
-  try { items = JSON.parse(localStorage.getItem('bp_items') || '{}'); } catch(e) { items = {}; }
-}
-
 function getColor(name) {
   var h = 0;
   for (var i = 0; i < name.length; i++) h = name.charCodeAt(i) + h * 31;
   return COLORS[Math.abs(h) % COLORS.length];
 }
-
-function initial(name) { return (name||'?').trim().slice(0,1).toUpperCase(); }
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function initial(name) { return (name||'?').trim()[0].toUpperCase(); }
+function genToken() {
+  var c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  var t = '';
+  for (var i = 0; i < 12; i++) t += c[Math.floor(Math.random() * c.length)];
+  return t;
 }
-
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById('screen-' + id).classList.add('active');
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function bgClose(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+function hideLoading() {
+  var el = document.getElementById('loading-overlay');
+  el.style.opacity = '0';
+  setTimeout(function() { el.style.display = 'none'; }, 300);
 }
 
-function showToast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2500);
+// ── Auth: tab switching ───────────────────────────────────
+function switchTab(tab) {
+  ['login','register'].forEach(function(t) {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('form-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('register-error').textContent = '';
 }
 
-function init() {
-  load();
-  var stored = localStorage.getItem('bp_user');
-  if (stored) {
-    try {
-      currentUser = JSON.parse(stored);
-      currentUser.color = getColor(currentUser.name);
-      renderUserChip();
-      renderLists();
-      showScreen('lists');
-    } catch(e) { showScreen('name'); }
-  } else {
-    showScreen('name');
-  }
+function friendlyError(code) {
+  var map = {
+    'auth/user-not-found':      'Geen account met dit e-mailadres.',
+    'auth/wrong-password':      'Wachtwoord is onjuist.',
+    'auth/invalid-credential':  'E-mail of wachtwoord is onjuist.',
+    'auth/invalid-email':       'Ongeldig e-mailadres.',
+    'auth/email-already-in-use':'Dit e-mailadres is al in gebruik.',
+    'auth/weak-password':       'Kies een sterker wachtwoord (min. 6 tekens).',
+    'auth/too-many-requests':   'Te veel pogingen. Probeer later opnieuw.'
+  };
+  return map[code] || 'Er is een fout opgetreden. Probeer opnieuw.';
 }
 
-function saveName() {
-  var name = document.getElementById('name-input').value.trim();
+// ── Auth: login ───────────────────────────────────────────
+function doLogin() {
+  var email = document.getElementById('login-email').value.trim();
+  var pass  = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Vul alle velden in.'; return; }
+  var btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Even wachten…';
+  auth.signInWithEmailAndPassword(email, pass).catch(function(err) {
+    btn.disabled = false; btn.textContent = 'Inloggen';
+    errEl.textContent = friendlyError(err.code);
+  });
+}
+
+// ── Auth: register ────────────────────────────────────────
+function doRegister() {
+  var name  = document.getElementById('reg-name').value.trim();
+  var email = document.getElementById('reg-email').value.trim();
+  var pass  = document.getElementById('reg-password').value;
+  var errEl = document.getElementById('register-error');
+  errEl.textContent = '';
+  if (!name || !email || !pass) { errEl.textContent = 'Vul alle velden in.'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.'; return; }
+  var btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Even wachten…';
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(function(cred) {
+      return cred.user.updateProfile({ displayName: name }).then(function() {
+        return db.ref('users/' + cred.user.uid).set({
+          displayName: name, email: email, createdAt: Date.now()
+        });
+      });
+    })
+    .catch(function(err) {
+      btn.disabled = false; btn.textContent = 'Account aanmaken';
+      errEl.textContent = friendlyError(err.code);
+    });
+}
+
+// ── Auth: guest ───────────────────────────────────────────
+function openGuestModal() {
+  document.getElementById('guest-name').value = '';
+  document.getElementById('modal-guest').classList.add('open');
+  setTimeout(function() { document.getElementById('guest-name').focus(); }, 200);
+}
+
+function doGuestLogin() {
+  var name = document.getElementById('guest-name').value.trim();
   if (!name) return;
-  currentUser = {name: name, color: getColor(name)};
-  localStorage.setItem('bp_user', JSON.stringify({name: name}));
-  renderUserChip();
-  renderLists();
-  showScreen('lists');
+  closeModal('modal-guest');
+  auth.signInAnonymously()
+    .then(function(cred) {
+      return cred.user.updateProfile({ displayName: name }).then(function() {
+        return db.ref('users/' + cred.user.uid).set({
+          displayName: name, isAnonymous: true, createdAt: Date.now()
+        });
+      });
+    })
+    .catch(function() { showToast('Kon niet inloggen als gast.'); });
+}
+
+// ── Auth: logout ──────────────────────────────────────────
+function doLogout() {
+  closeModal('modal-user');
+  stopListeners();
+  auth.signOut();
+}
+
+function goCreateAccount() {
+  switchTab('register');
+  showScreen('auth');
+}
+
+// ── User modal ────────────────────────────────────────────
+function openUserModal() {
+  var color = getColor(currentDisplayName);
+  var av = document.getElementById('modal-avatar');
+  av.textContent = initial(currentDisplayName);
+  av.style.background = color;
+  document.getElementById('modal-uname').textContent = currentDisplayName;
+  document.getElementById('modal-uemail').textContent =
+    currentUser.isAnonymous ? 'Gast' : (currentUser.email || '');
+  document.getElementById('modal-user').classList.add('open');
 }
 
 function renderUserChip() {
   var av = document.getElementById('header-avatar');
-  av.textContent = initial(currentUser.name);
-  av.style.background = currentUser.color;
-  document.getElementById('header-name').textContent = currentUser.name;
+  av.textContent = initial(currentDisplayName);
+  av.style.background = getColor(currentDisplayName);
+  document.getElementById('header-name').textContent = currentDisplayName;
 }
 
-function renderLists() {
-  var container = document.getElementById('lists-content');
-  var keys = Object.keys(lists);
-  container.innerHTML = '';
+// ── Listener management ───────────────────────────────────
+function stopListeners() {
+  if (unsubItems) { unsubItems(); unsubItems = null; }
+  if (unsubLists) { unsubLists(); unsubLists = null; }
+}
 
-  if (keys.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div><div class="empty-text">Nog geen lijstjes. Tik op + om je eerste aan te maken.</div></div>';
+// ── Lists screen ──────────────────────────────────────────
+function startListsListener() {
+  if (unsubLists) { unsubLists(); }
+  var ref = db.ref('userLists/' + currentUser.uid);
+  var handler = function(snap) {
+    loadAndRenderLists(Object.keys(snap.val() || {}));
+  };
+  ref.on('value', handler);
+  unsubLists = function() { ref.off('value', handler); };
+}
+
+function loadAndRenderLists(ids) {
+  var container = document.getElementById('lists-content');
+  if (ids.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div><div class="empty-text">Nog geen lijstjes.<br>Tik op + om je eerste aan te maken.</div></div>';
     return;
   }
-
-  keys.sort(function(a,b) { return (lists[a].ts||0)-(lists[b].ts||0); });
-  keys.forEach(function(id) {
-    var l = lists[id];
-    var count = items[id] ? Object.keys(items[id]).length : 0;
-    var card = document.createElement('div');
-    card.className = 'list-card';
-    card.innerHTML =
-      '<div class="list-icon">'+(l.emoji||'🛒')+'</div>'+
-      '<div class="list-info">'+
-        '<div class="list-name">'+esc(l.name)+'</div>'+
-        '<div class="list-meta">'+count+' '+(count===1?'product':'producten')+'</div>'+
-      '</div>'+
-      '<div class="list-arrow">›</div>';
-    card.onclick = function() { openList(id); };
-    container.appendChild(card);
+  Promise.all(ids.map(function(id) {
+    return db.ref('lists/' + id).once('value').then(function(s) { return { id: id, data: s.val() }; });
+  })).then(function(results) {
+    results = results.filter(function(r) { return r.data; });
+    results.sort(function(a, b) { return (a.data.createdAt||0) - (b.data.createdAt||0); });
+    container.innerHTML = '';
+    results.forEach(function(r) {
+      var l = r.data;
+      db.ref('items/' + r.id).once('value').then(function(s) {
+        var count = s.val() ? Object.keys(s.val()).length : 0;
+        var card = document.createElement('div');
+        card.className = 'list-card';
+        card.innerHTML =
+          '<div class="list-icon">' + esc(l.emoji||'🛒') + '</div>' +
+          '<div class="list-info">' +
+            '<div class="list-name">' + esc(l.name) + '</div>' +
+            '<div class="list-meta">' + count + ' ' + (count === 1 ? 'product' : 'producten') + '</div>' +
+          '</div>' +
+          '<div class="list-arrow">›</div>';
+        card.onclick = function() { openList(r.id); };
+        container.appendChild(card);
+      });
+    });
   });
 }
 
+// ── New list modal ────────────────────────────────────────
 function openNewListModal() {
   selectedEmoji = '🛒';
   var row = document.getElementById('emoji-row');
   row.innerHTML = '';
   EMOJIS.forEach(function(e) {
     var el = document.createElement('div');
-    el.className = 'emoji-opt'+(e===selectedEmoji?' selected':'');
+    el.className = 'emoji-opt' + (e === selectedEmoji ? ' selected' : '');
     el.textContent = e;
     el.onclick = function() {
       selectedEmoji = e;
@@ -294,189 +601,360 @@ function openNewListModal() {
   setTimeout(function() { document.getElementById('new-list-name').focus(); }, 200);
 }
 
-function closeNewListModal() {
-  document.getElementById('modal-new-list').classList.remove('open');
-}
-
 function createList() {
   var name = document.getElementById('new-list-name').value.trim();
   if (!name) return;
-  closeNewListModal();
-  var id = 'list_'+Date.now();
-  lists[id] = {id:id, name:name, emoji:selectedEmoji, ts:Date.now()};
-  items[id] = {};
-  save();
-  renderLists();
+  closeModal('modal-new-list');
+  var listId     = db.ref('lists').push().key;
+  var shareToken = genToken();
+  var uid        = currentUser.uid;
+  var updates    = {};
+  updates['lists/' + listId] = {
+    name: name, emoji: selectedEmoji,
+    createdBy: uid, createdByName: currentDisplayName,
+    createdAt: Date.now(), shareToken: shareToken
+  };
+  updates['shareTokens/' + shareToken] = listId;
+  updates['userLists/' + uid + '/' + listId] = true;
+  updates['listMembers/' + listId + '/' + uid] = {
+    displayName: currentDisplayName, role: 'owner', joinedAt: Date.now()
+  };
+  db.ref().update(updates)
+    .then(function() { openList(listId); })
+    .catch(function() { showToast('Kon lijst niet aanmaken.'); });
 }
 
+// ── List detail ───────────────────────────────────────────
 function openList(listId) {
+  if (unsubItems) { unsubItems(); unsubItems = null; }
   currentListId = listId;
-  var list = lists[listId];
-  if (!list) return;
-  document.getElementById('list-detail-title').textContent = (list.emoji||'')+' '+list.name;
-  document.getElementById('add-item-input').value = '';
-  renderItems();
-  showScreen('list');
+  prevItemKeys = null;
+  db.ref('lists/' + listId).once('value').then(function(snap) {
+    var list = snap.val();
+    if (!list) { showToast('Lijst niet gevonden.'); return; }
+    document.getElementById('list-detail-title').textContent = (list.emoji || '') + ' ' + list.name;
+    document.getElementById('add-item-input').value = '';
+    showScreen('list');
+    startItemsListener(listId);
+  });
 }
 
-function renderItems() {
+function startItemsListener(listId) {
+  var ref = db.ref('items/' + listId);
+  var handler = function(snap) { renderItems(snap.val() || {}); };
+  ref.on('value', handler);
+  unsubItems = function() { ref.off('value', handler); };
+}
+
+function renderItems(itms) {
   var container = document.getElementById('items-list');
-  var clearBtn = document.getElementById('clear-checked-btn');
-  var itms = items[currentListId] || {};
-  var keys = Object.keys(itms);
-  container.innerHTML = '';
+  var clearBtn  = document.getElementById('clear-checked-btn');
+  var keys      = Object.keys(itms);
+
+  if (prevItemKeys !== null) {
+    keys.filter(function(k) { return prevItemKeys.indexOf(k) === -1; })
+      .forEach(function(k) {
+        var item = itms[k];
+        if (item.addedByUid && item.addedByUid !== currentUser.uid) {
+          showToast(item.addedBy + ' voegde "' + item.text + '" toe');
+        }
+      });
+  }
+  prevItemKeys = keys.slice();
 
   if (keys.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">✍️</div><div class="empty-text">Nog niets op de lijst. Voeg je eerste product toe.</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">✍️</div><div class="empty-text">Nog niets op de lijst.<br>Voeg je eerste product toe.</div></div>';
     clearBtn.classList.remove('visible');
     return;
   }
 
   var unchecked = keys.filter(function(k) { return !itms[k].checked; });
-  var checked = keys.filter(function(k) { return itms[k].checked; });
+  var checked   = keys.filter(function(k) { return  itms[k].checked; });
   clearBtn.classList.toggle('visible', checked.length > 0);
 
+  container.innerHTML = '';
   unchecked.concat(checked).forEach(function(id) {
-    var item = itms[id];
-    var row = document.createElement('div');
-    row.className = 'item-row'+(item.checked?' checked':'');
-    var color = getColor(item.by||'?');
+    var item  = itms[id];
+    var color = getColor(item.addedBy || '?');
+    var row   = document.createElement('div');
+    row.className = 'item-row' + (item.checked ? ' checked' : '');
     row.innerHTML =
-      '<div class="checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 13 4 10"/></svg></div>'+
-      '<div class="item-text-wrap">'+
-        '<div class="item-text">'+esc(item.text)+'</div>'+
-        '<div class="item-by">'+esc(item.by||'')+'</div>'+
-      '</div>'+
-      '<div class="item-avatar" style="background:'+color+'">'+initial(item.by||'?')+'</div>'+
-      '<button class="delete-item-btn"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>';
+      '<div class="checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 13 4 10"/></svg></div>' +
+      '<div class="item-text-wrap">' +
+        '<div class="item-text">' + esc(item.text) + '</div>' +
+        '<div class="item-by">' + esc(item.addedBy || '') + '</div>' +
+      '</div>' +
+      '<div class="item-avatar-sm" style="background:' + color + '">' + initial(item.addedBy || '?') + '</div>' +
+      '<button class="delete-item-btn"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
 
     row.querySelector('.delete-item-btn').onclick = function(e) {
       e.stopPropagation();
-      delete items[currentListId][id];
-      save();
-      renderItems();
-      renderLists();
+      db.ref('items/' + currentListId + '/' + id).remove();
     };
-
     row.onclick = function(e) {
       if (e.target.closest('.delete-item-btn')) return;
-      items[currentListId][id].checked = !items[currentListId][id].checked;
-      save();
-      renderItems();
+      db.ref('items/' + currentListId + '/' + id).update({ checked: !item.checked });
     };
-
     container.appendChild(row);
   });
 }
 
 function addItem() {
   var input = document.getElementById('add-item-input');
-  var text = input.value.trim();
+  var text  = input.value.trim();
   if (!text || !currentListId) return;
   input.value = '';
   input.focus();
-  var id = 'item_'+Date.now();
-  if (!items[currentListId]) items[currentListId] = {};
-  items[currentListId][id] = {id:id, text:text, checked:false, by:currentUser.name, ts:Date.now()};
-  save();
-  renderItems();
-  renderLists();
+  db.ref('items/' + currentListId).push({
+    text: text, checked: false,
+    addedBy: currentDisplayName, addedByUid: currentUser.uid,
+    timestamp: Date.now()
+  });
 }
 
-document.getElementById('btn-save-name').onclick = saveName;
-document.getElementById('name-input').onkeydown = function(e) { if (e.key==='Enter') saveName(); };
-document.getElementById('user-chip').onclick = function() {
-  localStorage.removeItem('bp_user');
-  document.getElementById('name-input').value = '';
-  showScreen('name');
-};
-document.getElementById('fab-new-list').onclick = openNewListModal;
-document.getElementById('btn-cancel-list').onclick = closeNewListModal;
-document.getElementById('modal-new-list').onclick = function(e) { if (e.target===this) closeNewListModal(); };
-document.getElementById('new-list-name').onkeydown = function(e) { if (e.key==='Enter') createList(); };
-document.getElementById('btn-create-list').onclick = createList;
-document.getElementById('add-btn').onclick = addItem;
-document.getElementById('add-item-input').onkeydown = function(e) { if (e.key==='Enter') addItem(); };
-document.getElementById('clear-checked-btn').onclick = function() {
-  var itms = items[currentListId] || {};
-  Object.keys(itms).forEach(function(id) { if (itms[id].checked) delete itms[id]; });
-  save();
-  renderItems();
-  renderLists();
-};
-document.getElementById('back-btn').onclick = function() {
+function clearChecked() {
+  db.ref('items/' + currentListId).once('value').then(function(snap) {
+    var updates = {};
+    Object.keys(snap.val() || {}).forEach(function(id) {
+      if (snap.val()[id].checked) updates[id] = null;
+    });
+    if (Object.keys(updates).length) db.ref('items/' + currentListId).update(updates);
+  });
+}
+
+function goBack() {
+  if (unsubItems) { unsubItems(); unsubItems = null; }
   currentListId = null;
+  prevItemKeys = null;
   showScreen('lists');
-};
+}
 
-init();
+// ── Share modal ───────────────────────────────────────────
+function openShareModal() {
+  if (!currentListId) return;
+  db.ref('lists/' + currentListId).once('value').then(function(snap) {
+    var list = snap.val();
+    if (!list) return;
+    var url = location.origin + location.pathname + '?share=' + list.shareToken;
+    document.getElementById('share-link-box').textContent = url;
+    document.getElementById('modal-share').classList.add('open');
+    loadMembers(currentListId);
+    db.ref('listMembers/' + currentListId + '/' + currentUser.uid).once('value').then(function(s) {
+      var isOwner = s.val() && s.val().role === 'owner';
+      document.getElementById('delete-list-wrap').style.display = isOwner ? 'block' : 'none';
+    });
+  });
+}
 
-// ── APP ICOON genereren via canvas ────────────────────────
+function copyShareLink() {
+  var url = document.getElementById('share-link-box').textContent;
+  if (navigator.share) {
+    navigator.share({ title: 'Boodschappenlijst', url: url }).catch(function() {});
+    return;
+  }
+  navigator.clipboard.writeText(url).then(function() {
+    showToast('Link gekopieerd!');
+  }).catch(function() {
+    var el = document.getElementById('share-link-box');
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    showToast('Link gekopieerd!');
+  });
+}
+
+function loadMembers(listId) {
+  db.ref('listMembers/' + listId).once('value').then(function(snap) {
+    var members = snap.val() || {};
+    var keys    = Object.keys(members);
+    var el      = document.getElementById('members-container');
+    if (!keys.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="members-title">Leden (' + keys.length + ')</div>';
+    keys.forEach(function(uid) {
+      var m     = members[uid];
+      var color = getColor(m.displayName || '?');
+      var row   = document.createElement('div');
+      row.className = 'member-row';
+      row.innerHTML =
+        '<div class="item-avatar-sm" style="background:' + color + ';width:28px;height:28px;font-size:13px">' + initial(m.displayName || '?') + '</div>' +
+        '<span class="member-name">' + esc(m.displayName || 'Onbekend') + '</span>' +
+        '<span class="member-badge">' + (m.role === 'owner' ? 'Eigenaar' : 'Lid') + '</span>';
+      el.appendChild(row);
+    });
+  });
+}
+
+// ── Delete list ───────────────────────────────────────────
+function confirmDeleteList() {
+  if (!confirm('Weet je zeker dat je deze lijst wilt verwijderen? Dit kan niet ongedaan worden.')) return;
+  var listId = currentListId;
+  closeModal('modal-share');
+  db.ref('lists/' + listId).once('value').then(function(snap) {
+    var list = snap.val();
+    if (!list) return;
+    return db.ref('listMembers/' + listId).once('value').then(function(mSnap) {
+      var updates = {};
+      updates['lists/' + listId] = null;
+      updates['items/' + listId] = null;
+      updates['listMembers/' + listId] = null;
+      if (list.shareToken) updates['shareTokens/' + list.shareToken] = null;
+      Object.keys(mSnap.val() || {}).forEach(function(uid) {
+        updates['userLists/' + uid + '/' + listId] = null;
+      });
+      return db.ref().update(updates);
+    });
+  }).then(function() {
+    goBack();
+    showToast('Lijst verwijderd.');
+  }).catch(function() {
+    showToast('Kon lijst niet verwijderen.');
+  });
+}
+
+// ── Rename ────────────────────────────────────────────────
+function openRenameModal() {
+  closeModal('modal-user');
+  document.getElementById('rename-input').value = currentDisplayName;
+  document.getElementById('modal-rename').classList.add('open');
+  setTimeout(function() { document.getElementById('rename-input').focus(); }, 200);
+}
+
+function doRename() {
+  var name = document.getElementById('rename-input').value.trim();
+  if (!name) return;
+  closeModal('modal-rename');
+  if (name === currentDisplayName) return;
+  var uid = currentUser.uid;
+  currentUser.updateProfile({ displayName: name }).then(function() {
+    return db.ref('userLists/' + uid).once('value').then(function(snap) {
+      var updates = {};
+      updates['users/' + uid + '/displayName'] = name;
+      Object.keys(snap.val() || {}).forEach(function(listId) {
+        updates['listMembers/' + listId + '/' + uid + '/displayName'] = name;
+      });
+      return db.ref().update(updates);
+    });
+  }).then(function() {
+    currentDisplayName = name;
+    renderUserChip();
+    showToast('Naam gewijzigd naar ' + name + '.');
+  }).catch(function() {
+    showToast('Kon naam niet wijzigen.');
+  });
+}
+
+// ── Share token: join flow ────────────────────────────────
+function handleShareToken(token) {
+  db.ref('shareTokens/' + token).once('value').then(function(snap) {
+    var listId = snap.val();
+    if (!listId) { showToast('Ongeldige of verlopen link.'); showScreen('lists'); return; }
+    var uid     = currentUser.uid;
+    var updates = {};
+    updates['userLists/' + uid + '/' + listId] = true;
+    updates['listMembers/' + listId + '/' + uid] = {
+      displayName: currentDisplayName, role: 'member', joinedAt: Date.now()
+    };
+    db.ref().update(updates).then(function() {
+      history.replaceState({}, '', location.pathname);
+      pendingShareToken = null;
+      openList(listId);
+    });
+  }).catch(function() {
+    showToast('Kon lijst niet openen.');
+    showScreen('lists');
+  });
+}
+
+// ── Auth state listener ───────────────────────────────────
+auth.onAuthStateChanged(function(user) {
+  hideLoading();
+  if (!user) {
+    stopListeners();
+    currentUser = null;
+    showScreen('auth');
+    return;
+  }
+
+  currentUser        = user;
+  currentDisplayName = user.displayName || 'Gast';
+
+  document.getElementById('guest-banner').style.display = user.isAnonymous ? 'flex' : 'none';
+  document.getElementById('btn-login').disabled    = false;
+  document.getElementById('btn-login').textContent = 'Inloggen';
+  document.getElementById('btn-register').disabled    = false;
+  document.getElementById('btn-register').textContent = 'Account aanmaken';
+
+  renderUserChip();
+  startListsListener();
+
+  if (pendingShareToken) {
+    handleShareToken(pendingShareToken);
+  } else {
+    showScreen('lists');
+  }
+});
+
+// ── Keyboard shortcuts ────────────────────────────────────
+document.getElementById('login-email').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+document.getElementById('reg-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRegister(); });
+document.getElementById('new-list-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') createList(); });
+document.getElementById('add-item-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') addItem(); });
+document.getElementById('guest-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') doGuestLogin(); });
+document.getElementById('rename-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRename(); });
+
+// ── Init: share token from URL ────────────────────────────
+(function() {
+  var token = new URLSearchParams(location.search).get('share');
+  if (token) pendingShareToken = token;
+})();
+
+// ── PWA: app icon ─────────────────────────────────────────
 (function() {
   var c = document.createElement('canvas');
   c.width = 512; c.height = 512;
   var ctx = c.getContext('2d');
-  // Groene achtergrond met afgeronde hoeken
   ctx.fillStyle = '#2D6A4F';
   ctx.beginPath();
   ctx.roundRect(0, 0, 512, 512, 115);
   ctx.fill();
-  // Winkelwagentje emoji
   ctx.font = '300px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('🛒', 256, 270);
-  var iconUrl = c.toDataURL('image/png');
-  document.getElementById('apple-icon').href = iconUrl;
+  document.getElementById('apple-icon').href = c.toDataURL('image/png');
 })();
 
-// ── PWA MANIFEST (inline, geen extern bestand nodig) ─────
-var manifest = {
-  name: 'Boodschappen',
-  short_name: 'Boodschappen',
-  description: 'Samen boodschappen bijhouden',
-  start_url: './',
-  display: 'standalone',
-  background_color: '#F7F5F0',
-  theme_color: '#2D6A4F',
-  orientation: 'portrait',
-  icons: [
-    {
+// ── PWA: manifest ─────────────────────────────────────────
+(function() {
+  var manifest = {
+    name: 'Boodschappen', short_name: 'Boodschappen',
+    description: 'Samen boodschappen bijhouden',
+    start_url: './', display: 'standalone',
+    background_color: '#F7F5F0', theme_color: '#2D6A4F',
+    icons: [{
       src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%232D6A4F'/%3E%3Ctext x='256' y='345' font-size='290' text-anchor='middle'%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E",
-      sizes: '512x512',
-      type: 'image/svg+xml',
-      purpose: 'any maskable'
-    }
-  ]
-};
-var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-var manifestUrl = URL.createObjectURL(blob);
-document.getElementById('pwa-manifest').href = manifestUrl;
+      sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable'
+    }]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+})();
 
-// ── SERVICE WORKER (offline werking) ─────────────────────
+// ── Service worker (offline) ──────────────────────────────
 if ('serviceWorker' in navigator) {
-  var swCode = `
-    var CACHE = 'boodschappen-v1';
-    var ASSETS = [self.location.href];
-    self.addEventListener('install', function(e) {
-      e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(ASSETS); }));
-      self.skipWaiting();
-    });
-    self.addEventListener('activate', function(e) {
-      e.waitUntil(caches.keys().then(function(keys) {
-        return Promise.all(keys.filter(function(k) { return k !== CACHE; }).map(function(k) { return caches.delete(k); }));
-      }));
-      self.clients.claim();
-    });
-    self.addEventListener('fetch', function(e) {
-      e.respondWith(caches.match(e.request).then(function(r) { return r || fetch(e.request); }));
-    });
-  `;
-  var swBlob = new Blob([swCode], {type: 'application/javascript'});
-  var swUrl = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swUrl).catch(function() {});
+  var swCode = [
+    "var CACHE='boodschappen-v2';",
+    "var PAGE=self.location.href.split('?')[0];",
+    "self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.add(PAGE);}));self.skipWaiting();});",
+    "self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));}));self.clients.claim();});",
+    "self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request);}));});"
+  ].join('');
+  var swBlob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function() {});
 }
 </script>
-
 </body>
 </html>
