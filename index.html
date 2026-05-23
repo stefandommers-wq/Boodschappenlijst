@@ -373,6 +373,7 @@ var currentListId      = null;
 var pendingShareToken  = null;
 var unsubItems         = null;
 var unsubLists         = null;
+var unsubItemCounts    = [];
 var prevItemKeys       = null;
 
 // ── Constants ────────────────────────────────────────────
@@ -535,6 +536,8 @@ function renderUserChip() {
 function stopListeners() {
   if (unsubItems) { unsubItems(); unsubItems = null; }
   if (unsubLists) { unsubLists(); unsubLists = null; }
+  unsubItemCounts.forEach(function(fn) { fn(); });
+  unsubItemCounts = [];
 }
 
 // ── Lists screen ──────────────────────────────────────────
@@ -549,6 +552,9 @@ function startListsListener() {
 }
 
 function loadAndRenderLists(ids) {
+  unsubItemCounts.forEach(function(fn) { fn(); });
+  unsubItemCounts = [];
+
   var container = document.getElementById('lists-content');
   if (ids.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div><div class="empty-text">Nog geen lijstjes.<br>Tik op + om je eerste aan te maken.</div></div>';
@@ -562,20 +568,26 @@ function loadAndRenderLists(ids) {
     container.innerHTML = '';
     results.forEach(function(r) {
       var l = r.data;
-      db.ref('items/' + r.id).once('value').then(function(s) {
+      var card = document.createElement('div');
+      card.className = 'list-card';
+      card.innerHTML =
+        '<div class="list-icon">' + esc(l.emoji||'🛒') + '</div>' +
+        '<div class="list-info">' +
+          '<div class="list-name">' + esc(l.name) + '</div>' +
+          '<div class="list-meta" id="count-' + r.id + '">0 producten</div>' +
+        '</div>' +
+        '<div class="list-arrow">›</div>';
+      card.onclick = function() { openList(r.id); };
+      container.appendChild(card);
+
+      var ref = db.ref('items/' + r.id);
+      var handler = function(s) {
         var count = s.val() ? Object.keys(s.val()).length : 0;
-        var card = document.createElement('div');
-        card.className = 'list-card';
-        card.innerHTML =
-          '<div class="list-icon">' + esc(l.emoji||'🛒') + '</div>' +
-          '<div class="list-info">' +
-            '<div class="list-name">' + esc(l.name) + '</div>' +
-            '<div class="list-meta">' + count + ' ' + (count === 1 ? 'product' : 'producten') + '</div>' +
-          '</div>' +
-          '<div class="list-arrow">›</div>';
-        card.onclick = function() { openList(r.id); };
-        container.appendChild(card);
-      });
+        var el = document.getElementById('count-' + r.id);
+        if (el) el.textContent = count + ' ' + (count === 1 ? 'product' : 'producten');
+      };
+      ref.on('value', handler);
+      unsubItemCounts.push(function() { ref.off('value', handler); });
     });
   });
 }
