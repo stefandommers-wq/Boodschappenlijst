@@ -810,13 +810,18 @@ function confirmDeleteList() {
   db.ref('lists/' + listId).once('value').then(function(snap) {
     var list = snap.val();
     if (!list) return Promise.reject('not-found');
-    var updates = {};
-    updates['lists/' + listId] = null;
-    updates['items/' + listId] = null;
-    updates['listMembers/' + listId] = null;
-    if (list.shareToken) updates['shareTokens/' + list.shareToken] = null;
-    updates['userLists/' + uid + '/' + listId] = null;
-    return db.ref().update(updates);
+    var shareToken = list.shareToken;
+    // Core delete: paths the owner has write permission for
+    var coreUpdates = {};
+    coreUpdates['lists/' + listId] = null;
+    coreUpdates['items/' + listId] = null;
+    coreUpdates['userLists/' + uid + '/' + listId] = null;
+    return db.ref().update(coreUpdates).then(function() {
+      // Best-effort cleanup — ignore permission errors
+      var cleanups = [db.ref('listMembers/' + listId).remove().catch(function() {})];
+      if (shareToken) cleanups.push(db.ref('shareTokens/' + shareToken).remove().catch(function() {}));
+      return Promise.all(cleanups);
+    });
   }).then(function() {
     goBack();
     showToast('Lijst verwijderd.');
