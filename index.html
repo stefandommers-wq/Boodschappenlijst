@@ -563,6 +563,9 @@ function loadAndRenderLists(ids) {
   Promise.all(ids.map(function(id) {
     return db.ref('lists/' + id).once('value').then(function(s) { return { id: id, data: s.val() }; });
   })).then(function(results) {
+    results.filter(function(r) { return !r.data; }).forEach(function(r) {
+      db.ref('userLists/' + currentUser.uid + '/' + r.id).remove();
+    });
     results = results.filter(function(r) { return r.data; });
     results.sort(function(a, b) { return (a.data.createdAt||0) - (b.data.createdAt||0); });
     container.innerHTML = '';
@@ -800,28 +803,25 @@ function loadMembers(listId) {
 
 // ── Delete list ───────────────────────────────────────────
 function confirmDeleteList() {
-  if (!confirm('Weet je zeker dat je deze lijst wilt verwijderen? Dit kan niet ongedaan worden.')) return;
+  if (!confirm('Weet je zeker dat je deze lijst wilt verwijderen?\n\nAlle items worden permanent verwijderd en dit kan niet ongedaan worden gemaakt.')) return;
   var listId = currentListId;
+  var uid = currentUser.uid;
   closeModal('modal-share');
   db.ref('lists/' + listId).once('value').then(function(snap) {
     var list = snap.val();
-    if (!list) return;
-    return db.ref('listMembers/' + listId).once('value').then(function(mSnap) {
-      var updates = {};
-      updates['lists/' + listId] = null;
-      updates['items/' + listId] = null;
-      updates['listMembers/' + listId] = null;
-      if (list.shareToken) updates['shareTokens/' + list.shareToken] = null;
-      Object.keys(mSnap.val() || {}).forEach(function(uid) {
-        updates['userLists/' + uid + '/' + listId] = null;
-      });
-      return db.ref().update(updates);
-    });
+    if (!list) return Promise.reject('not-found');
+    var updates = {};
+    updates['lists/' + listId] = null;
+    updates['items/' + listId] = null;
+    updates['listMembers/' + listId] = null;
+    if (list.shareToken) updates['shareTokens/' + list.shareToken] = null;
+    updates['userLists/' + uid + '/' + listId] = null;
+    return db.ref().update(updates);
   }).then(function() {
     goBack();
     showToast('Lijst verwijderd.');
-  }).catch(function() {
-    showToast('Kon lijst niet verwijderen.');
+  }).catch(function(err) {
+    if (err !== 'not-found') showToast('Kon lijst niet verwijderen.');
   });
 }
 
