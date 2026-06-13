@@ -111,6 +111,11 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
 .delete-item-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
 .delete-item-btn svg { width: 16px; height: 16px; stroke: var(--text3); stroke-width: 2; fill: none; transition: stroke 0.15s; }
 .delete-item-btn:active svg { stroke: var(--danger); }
+.qty-control { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg); font-size: 17px; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; color: var(--text2); padding: 0; line-height: 1; flex-shrink: 0; }
+.qty-btn:active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.qty-btn:disabled { opacity: 0.3; cursor: default; }
+.qty-num { font-size: 14px; font-weight: 600; color: var(--text); min-width: 20px; text-align: center; }
 .clear-checked-btn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--danger-light); color: var(--danger); border: none; border-radius: 100px; padding: 12px 22px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: none; -webkit-tap-highlight-color: transparent; box-shadow: var(--shadow-lg); white-space: nowrap; }
 .clear-checked-btn.visible { display: block; }
 .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
@@ -693,21 +698,35 @@ function renderItems(itms) {
     var color = getColor(item.addedBy || '?');
     var row   = document.createElement('div');
     row.className = 'item-row' + (item.checked ? ' checked' : '');
+    var qty = item.quantity || 1;
     row.innerHTML =
       '<div class="checkbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 13 4 10"/></svg></div>' +
       '<div class="item-text-wrap">' +
         '<div class="item-text">' + esc(item.text) + '</div>' +
         '<div class="item-by">' + esc(item.addedBy || '') + '</div>' +
       '</div>' +
-      '<div class="item-avatar-sm" style="background:' + color + '">' + initial(item.addedBy || '?') + '</div>' +
+      '<div class="qty-control">' +
+        '<button class="qty-btn qty-minus"' + (qty <= 1 ? ' disabled' : '') + '>−</button>' +
+        '<span class="qty-num">' + qty + '</span>' +
+        '<button class="qty-btn qty-plus">+</button>' +
+      '</div>' +
       '<button class="delete-item-btn"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
 
+    row.querySelector('.qty-minus').onclick = function(e) {
+      e.stopPropagation();
+      if (qty > 1) db.ref('items/' + currentListId + '/' + id).update({ quantity: qty - 1 });
+    };
+    row.querySelector('.qty-plus').onclick = function(e) {
+      e.stopPropagation();
+      db.ref('items/' + currentListId + '/' + id).update({ quantity: qty + 1 });
+    };
     row.querySelector('.delete-item-btn').onclick = function(e) {
       e.stopPropagation();
+      if (!confirm('"' + item.text + '" verwijderen?')) return;
       db.ref('items/' + currentListId + '/' + id).remove();
     };
     row.onclick = function(e) {
-      if (e.target.closest('.delete-item-btn')) return;
+      if (e.target.closest('.qty-control') || e.target.closest('.delete-item-btn')) return;
       db.ref('items/' + currentListId + '/' + id).update({ checked: !item.checked });
     };
     container.appendChild(row);
@@ -721,7 +740,7 @@ function addItem() {
   input.value = '';
   input.focus();
   db.ref('items/' + currentListId).push({
-    text: text, checked: false,
+    text: text, checked: false, quantity: 1,
     addedBy: currentDisplayName, addedByUid: currentUser.uid,
     timestamp: Date.now()
   });
