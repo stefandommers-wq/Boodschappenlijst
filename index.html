@@ -103,7 +103,8 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
 .item-row.checked .checkbox { background: var(--accent); border-color: var(--accent); }
 .checkbox svg { width: 13px; height: 13px; stroke: white; stroke-width: 3; fill: none; opacity: 0; transition: opacity 0.15s; }
 .item-row.checked .checkbox svg { opacity: 1; }
-.item-text-wrap { flex: 1; min-width: 0; }
+.item-text-wrap { flex: 1; min-width: 0; cursor: pointer; }
+.item-text-wrap:hover .item-text { text-decoration: underline dotted var(--text3); }
 .item-text { font-size: 16px; font-weight: 500; color: var(--text); }
 .item-row.checked .item-text { text-decoration: line-through; color: var(--text3); }
 .item-by { font-size: 12px; color: var(--text3); margin-top: 2px; }
@@ -348,6 +349,19 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
   </div>
 </div>
 
+<!-- ── Modal: Item wijzigen ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-edit-item" onclick="bgClose(event,'modal-edit-item')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Item wijzigen</div>
+    <input class="modal-input" id="edit-item-input" type="text" placeholder="Productnaam" autocorrect="on" spellcheck="true">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-item')">Annuleer</button>
+      <button class="btn-primary" style="flex:1.5" onclick="saveEditItem()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Firebase SDKs (compat, CDN) -->
@@ -380,6 +394,7 @@ var unsubItems         = null;
 var unsubLists         = null;
 var unsubItemCounts    = [];
 var prevItemKeys       = null;
+var currentEditItemId  = null;
 
 // ── Constants ────────────────────────────────────────────
 var COLORS = ['#2D6A4F','#1A6B8A','#8B4513','#6B3FA0','#C0392B','#D4A853','#2C7873','#8E44AD'];
@@ -725,9 +740,13 @@ function renderItems(itms) {
       if (!confirm('"' + item.text + '" verwijderen?')) return;
       db.ref('items/' + currentListId + '/' + id).remove();
     };
-    row.onclick = function(e) {
-      if (e.target.closest('.qty-control') || e.target.closest('.delete-item-btn')) return;
+    row.querySelector('.checkbox').onclick = function(e) {
+      e.stopPropagation();
       db.ref('items/' + currentListId + '/' + id).update({ checked: !item.checked });
+    };
+    row.querySelector('.item-text-wrap').onclick = function(e) {
+      e.stopPropagation();
+      openEditItem(id, item.text);
     };
     container.appendChild(row);
   });
@@ -744,6 +763,25 @@ function addItem() {
     addedBy: currentDisplayName, addedByUid: currentUser.uid,
     timestamp: Date.now()
   });
+}
+
+function openEditItem(itemId, text) {
+  currentEditItemId = itemId;
+  document.getElementById('edit-item-input').value = text;
+  document.getElementById('modal-edit-item').classList.add('open');
+  setTimeout(function() {
+    var inp = document.getElementById('edit-item-input');
+    inp.focus();
+    inp.select();
+  }, 200);
+}
+
+function saveEditItem() {
+  var text = document.getElementById('edit-item-input').value.trim();
+  if (!text || !currentEditItemId) return;
+  closeModal('modal-edit-item');
+  db.ref('items/' + currentListId + '/' + currentEditItemId).update({ text: text });
+  currentEditItemId = null;
 }
 
 function clearChecked() {
@@ -940,6 +978,7 @@ document.getElementById('new-list-name').addEventListener('keydown', function(e)
 document.getElementById('add-item-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') addItem(); });
 document.getElementById('guest-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') doGuestLogin(); });
 document.getElementById('rename-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRename(); });
+document.getElementById('edit-item-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveEditItem(); });
 
 // ── Init: share token from URL ────────────────────────────
 (function() {
