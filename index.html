@@ -581,13 +581,22 @@ function loadAndRenderLists(ids) {
     return;
   }
   Promise.all(ids.map(function(id) {
-    return db.ref('lists/' + id).once('value').then(function(s) { return { id: id, data: s.val() }; });
+    return Promise.all([
+      db.ref('lists/' + id).once('value'),
+      db.ref('listMembers/' + id + '/' + currentUser.uid).once('value')
+    ]).then(function(snaps) {
+      return { id: id, data: snaps[0].val(), member: snaps[1].exists() };
+    });
   })).then(function(results) {
-    results.filter(function(r) { return !r.data; }).forEach(function(r) {
+    results.filter(function(r) { return !r.data || !r.member; }).forEach(function(r) {
       db.ref('userLists/' + currentUser.uid + '/' + r.id).remove();
     });
-    results = results.filter(function(r) { return r.data; });
+    results = results.filter(function(r) { return r.data && r.member; });
     results.sort(function(a, b) { return (a.data.createdAt||0) - (b.data.createdAt||0); });
+    if (results.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">🛍️</div><div class="empty-text">Nog geen lijstjes.<br>Tik op + om je eerste aan te maken.</div></div>';
+      return;
+    }
     container.innerHTML = '';
     results.forEach(function(r) {
       var l = r.data;
