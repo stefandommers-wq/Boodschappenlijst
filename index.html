@@ -55,6 +55,7 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
 .btn-ghost { width: 100%; padding: 14px; background: transparent; color: var(--text2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .btn-ghost:active { background: var(--bg); }
 .auth-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; text-align: center; }
+.forgot-link { display: block; text-align: right; font-size: 13px; color: var(--accent); margin-top: 6px; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 /* ── Guest banner ────────────────────────────────────── */
 .guest-banner { background: #FFF8E6; border-bottom: 1px solid #F0D08A; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -199,6 +200,7 @@ body { display: flex; flex-direction: column; min-height: 100dvh; }
         <label class="field-label">Wachtwoord</label>
         <input class="auth-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
       </div>
+      <button class="forgot-link" onclick="doForgotPassword()">Wachtwoord vergeten?</button>
       <button class="btn-primary" id="btn-login" onclick="doLogin()">Inloggen</button>
       <div class="auth-error" id="login-error"></div>
     </div>
@@ -457,6 +459,19 @@ function friendlyError(code) {
     'auth/too-many-requests':   'Te veel pogingen. Probeer later opnieuw.'
   };
   return map[code] || 'Er is een fout opgetreden. Probeer opnieuw.';
+}
+
+// ── Auth: forgot password ─────────────────────────────────
+function doForgotPassword() {
+  var email = document.getElementById('login-email').value.trim();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = 'Vul eerst je e-mailadres in.'; return; }
+  auth.sendPasswordResetEmail(email).then(function() {
+    showToast('Reset-mail verzonden naar ' + email);
+  }).catch(function(err) {
+    errEl.textContent = friendlyError(err.code);
+  });
 }
 
 // ── Auth: login ───────────────────────────────────────────
